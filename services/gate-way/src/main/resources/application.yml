@@ -1,0 +1,24 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: gate-way
+  cloud:
+    gateway:
+      routes:
+        - id: customer-service-route
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/customers/**
+          filters:
+            - AddResponseHeader=X-Served-By, gate-way
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    gateway:
+      enabled: true
