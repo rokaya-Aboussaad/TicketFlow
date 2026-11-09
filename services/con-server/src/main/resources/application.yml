@@ -1,16 +1,20 @@
+server:
+  port: 8888
+
 spring:
   application:
-    name: con-server
-  profiles:
-    active:
-      - native
-
+    name: config-server
   cloud:
     config:
       server:
-        native:
-         search-locations: file:///C:/studies/github documents/ticketflow/config-repo
+        git:
+          uri: https://github.com/rokaya-Aboussaad/ticketflow-config.git
+          default-label: main
+          clone-on-start: true
+          refresh-rate: 0
 
-
-server:
-  port: 8888
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
