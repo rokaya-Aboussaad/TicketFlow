@@ -4,10 +4,11 @@ import com.ticketflow.eventservice.domain.Event;
 import com.ticketflow.eventservice.dto.EventRequest;
 import com.ticketflow.eventservice.service.EventService;
 import jakarta.validation.Valid;
-import java.util.List;
-import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/events")
@@ -15,8 +16,9 @@ public class EventController {
 
     private final EventService service;
 
-    public EventController(EventService s) {
-        service = s;
+    // Injection de dépendance propre via le constructeur
+    public EventController(EventService service) {
+        this.service = service;
     }
 
     @GetMapping
@@ -31,13 +33,13 @@ public class EventController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Event create(@Valid @RequestBody EventRequest r) {
-        return service.create(r);
+    public Event create(@Valid @RequestBody EventRequest request) {
+        return service.create(request);
     }
 
     @PutMapping("/{id}")
-    public Event update(@PathVariable Long id, @Valid @RequestBody EventRequest r) {
-        return service.update(id, r);
+    public Event update(@PathVariable Long id, @Valid @RequestBody EventRequest request) {
+        return service.update(id, request);
     }
 
     @DeleteMapping("/{id}")
