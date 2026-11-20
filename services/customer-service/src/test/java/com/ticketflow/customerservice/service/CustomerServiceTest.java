@@ -28,8 +28,7 @@ class CustomerServiceTest {
     @InjectMocks
     CustomerService service;
 
-    private final CustomerRequest request =
-            new CustomerRequest("John", "Doe", "  John@Example.com ", "+212600000000");
+    private final CustomerRequest request = new CustomerRequest("John", "Doe", "  John@Example.com ", "+212600000000");
 
     @Test
     void createNormalizesEmailAndSaves() {
@@ -46,8 +45,7 @@ class CustomerServiceTest {
     void createRejectsDuplicateEmail() {
         when(repo.existsByEmail("john@example.com")).thenReturn(true);
 
-        assertThatThrownBy(() -> service.create(request))
-                .isInstanceOf(DuplicateEmailException.class);
+        assertThatThrownBy(() -> service.create(request)).isInstanceOf(DuplicateEmailException.class);
         verify(repo, never()).save(any());
     }
 
@@ -55,7 +53,6 @@ class CustomerServiceTest {
     void getThrowsWhenCustomerDoesNotExist() {
         when(repo.findById(42L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.get(42L))
-                .isInstanceOf(CustomerNotFoundException.class);
+        assertThatThrownBy(() -> service.get(42L)).isInstanceOf(CustomerNotFoundException.class);
     }
 }

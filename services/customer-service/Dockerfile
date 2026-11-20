@@ -1,10 +1,12 @@
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
-COPY . .
-RUN mvn -B -ntp -pl services/customer-service -am package -DskipTests
-
+COPY pom.xml .
+COPY services services
+RUN --mount=type=cache,target=/root/.m2,sharing=locked \
+    mvn -B -ntp -pl services/customer-service -am -DskipTests \
+    -Dmaven.wagon.http.retryHandler.count=10 -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 package
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /workspace/services/customer-service/target/*.jar app.jar
+COPY --from=build /workspace/services/customer-service/target/customer-service-1.0.0-SNAPSHOT.jar app.jar
 EXPOSE 8081
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java","-jar","/app/app.jar"]

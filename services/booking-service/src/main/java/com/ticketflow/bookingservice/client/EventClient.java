@@ -1,15 +1,31 @@
 package com.ticketflow.bookingservice.client;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import java.util.Map;
+import org.springframework.web.bind.annotation.*;
 
-// Le nom "event-service" correspond au spring.application.name de l'autre service (Eureka le trouvera tout seul)
 @FeignClient(name = "event-service")
 public interface EventClient {
-
-    // On reprend EXACTEMENT le même chemin que dans EventController
     @GetMapping("/api/events/{id}")
-    Map<String, Object> getEventById(@PathVariable("id") Long id);
+    EventView getEvent(@PathVariable("id") Long id);
+
+    @PostMapping("/api/events/{id}/reservations")
+    void reserve(@PathVariable("id") Long id, @RequestParam("quantity") int quantity);
+
+    @PostMapping("/api/events/{id}/releases")
+    void release(@PathVariable("id") Long id, @RequestParam("quantity") int quantity);
+
+    record EventView(
+        Long id,
+        String title,
+        String description,
+        String venue,
+        LocalDateTime startsAt,
+        LocalDateTime endsAt,
+        Integer capacity,
+        Integer availableSeats,
+        BigDecimal price,
+        String status
+    ) {}
 }

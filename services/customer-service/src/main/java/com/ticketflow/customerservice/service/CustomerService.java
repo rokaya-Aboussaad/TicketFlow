@@ -24,8 +24,7 @@ public class CustomerService {
         if (repo.existsByEmail(email)) {
             throw new DuplicateEmailException(email);
         }
-        return repo.save(new Customer(
-                request.firstName(), request.lastName(), email, request.phone()));
+        return repo.save(new Customer(request.firstName(), request.lastName(), email, request.phone()));
     }
 
     @Transactional(readOnly = true)

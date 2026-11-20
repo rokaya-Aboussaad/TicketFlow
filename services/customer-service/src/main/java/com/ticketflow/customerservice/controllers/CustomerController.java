@@ -31,7 +31,9 @@ public class CustomerController {
     ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerRequest request) {
         CustomerResponse created = CustomerResponse.from(service.create(request));
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}").buildAndExpand(created.id()).toUri();
+            .path("/{id}")
+            .buildAndExpand(created.id())
+            .toUri();
         return ResponseEntity.created(location).body(created);
     }
 

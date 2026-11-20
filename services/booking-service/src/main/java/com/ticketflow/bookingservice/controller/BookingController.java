@@ -1,31 +1,36 @@
 package com.ticketflow.bookingservice.controller;
 
-import com.ticketflow.bookingservice.client.EventClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import java.util.Map;
+import com.ticketflow.bookingservice.domain.Booking;
+import com.ticketflow.bookingservice.dto.CreateBookingRequest;
+import com.ticketflow.bookingservice.service.BookingService;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
 
-    private final EventClient eventClient;
+    private final BookingService s;
 
-    // Injection automatique du client Feign
-    public BookingController(EventClient eventClient) {
-        this.eventClient = eventClient;
+    public BookingController(BookingService s) {
+        this.s = s;
     }
 
-    @GetMapping("/check/{eventId}")
-    public Map<String, Object> checkEvent(@PathVariable Long eventId) {
-        // Appel transparent à event-service via OpenFeign et Eureka
-        Map<String, Object> event = eventClient.getEventById(eventId);
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Booking create(@Valid @RequestBody CreateBookingRequest r, @RequestHeader("Idempotency-Key") String key) {
+        return s.create(r, key);
+    }
 
-        return Map.of(
-                "bookingStatus", "CONFIRMED",
-                "eventDetails", event
-        );
+    @GetMapping("/{id}")
+    public Booking get(@PathVariable Long id) {
+        return s.get(id);
+    }
+
+    @GetMapping("/customer/{customerId}")
+    public List<Booking> customer(@PathVariable Long customerId) {
+        return s.byCustomer(customerId);
     }
 }

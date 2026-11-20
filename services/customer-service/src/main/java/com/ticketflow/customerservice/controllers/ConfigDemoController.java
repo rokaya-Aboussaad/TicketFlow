@@ -13,7 +13,7 @@ public class ConfigDemoController {
     private final String message;
 
     // On injecte la variable "ticketflow.message" qui vient de ton fichier GitHub customer-service.yml
-    public ConfigDemoController(@Value("${ticketflow.message}") String message) {
+    public ConfigDemoController(@Value("${ticketflow.message:Bienvenue dans TicketFlow}") String message) {
         this.message = message;
     }
 

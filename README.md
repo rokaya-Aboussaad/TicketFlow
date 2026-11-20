@@ -1,102 +1,67 @@
-# TicketFlow
+# TicketFlow — microservices Spring Boot
 
-**A hands-on reference project for learning Spring Cloud and microservices, built around a real-world ticket booking platform.**
+Java 21 · Spring Boot 3.5.7 · Spring Cloud 2025.0.1 · Eureka · Config Server · Gateway · OpenFeign · Kafka · MySQL 8 (une base par service).
 
-TicketFlow is an open-source educational project that takes you from
-"what is a microservice?" to building resilient, event-driven, observable
-distributed systems with the Spring ecosystem.
+## Démarrage local
+Prérequis : JDK 21, Docker Desktop (démarré), connexion internet (premier build).
 
-Instead of yet another e-commerce demo, it tackles problems that naturally
-require distributed-systems patterns: limited seat inventory, concurrent
-bookings, unreliable payment providers, and asynchronous notifications.
+```powershell
+# 1) Compiler et lancer les tests (depuis TicketFlow/)
+.\mvnw.cmd clean verify
 
-## What you will learn
+# 2) Lancer toute la stack (MySQL, Kafka, Eureka, Config Server, 6 services, Gateway)
+docker compose -f infra/docker-compose.yml up --build -d
 
-- **Service discovery & routing**: Eureka and Spring Cloud Gateway
-- **Centralized configuration**: Spring Cloud Config with dynamic refresh
-- **Inter-service communication**: declarative REST clients with OpenFeign
-- **Resilience**: circuit breaker, retry, timeout, bulkhead and fallbacks (Resilience4J)
-- **Event-driven architecture**: asynchronous messaging with Apache Kafka
-- **Distributed transactions**: Saga pattern, Outbox pattern, idempotency
-- **Containerization**: Docker and Docker Compose
-- **AI integration** *(later)*: natural-language search and RAG assistant with Spring AI
+# 3) Suivre l'état / les logs
+docker compose -f infra/docker-compose.yml ps
+docker compose -f infra/docker-compose.yml logs -f booking-service
+```
 
-## Architecture
+Le premier build est long (téléchargement des dépendances Maven). Compter 1 à 2 minutes après `up` pour que tous les services s'enregistrent dans Eureka.
 
-| Module | Role | Key technology | Status |
-|---|---|---|---|
-| `customer-service` | Customer profiles (CRUD) | Spring Web, JPA | Done |
-| `api-gateway` | Single entry point, routing, rate limiting | Spring Cloud Gateway | Planned |
-| `discovery-server` | Service registry | Eureka | Planned |
-| `event-service` | Events and seats catalog | Spring Web, JPA | Planned |
-| `config-server` | Centralized configuration | Spring Cloud Config | Planned |
-| `booking-service` | Booking and seat locking | OpenFeign, Resilience4J | Planned |
-| `payment-service` | Simulated payment provider (random failures) | Resilience4J | Planned |
-| `notification-service` | Confirmation emails/SMS | Kafka consumer | Planned |
-| `ai-assistant-service` | Natural-language search, recommendations | Spring AI | Later |
-
-## Roadmap
-
-Each step has a Git tag and a lesson in `docs/lessons/`.
-
-| Tag | Content |
+| Composant | Adresse |
 |---|---|
-| `step-00-setup` | Parent POM, repo structure, CI |
-| `step-01-customer-service` | First business service |
-| `step-02-gateway-static` | Gateway with static routes |
-| `step-03-discovery` | Eureka + load-balanced routing |
-| `step-04-event-service` | Second business service |
-| `step-05-config` | Config Server |
-| `step-06-booking-feign` | booking-service + OpenFeign |
-| `step-07-resilience` | payment-service + Resilience4J |
-| `step-08-kafka` | Events + notification-service |
-| `step-09-saga` | Saga, Outbox, idempotency |
-| `step-10-security` | Keycloak (customer-service integration) |
-| `step-11-observability` | Tracing and metrics |
-| `step-12-ai` | Spring AI |
+| API Gateway | http://localhost:8080 |
+| Eureka | http://localhost:8761 |
+| Config Server | http://localhost:8888/customer-service/default |
+| Adminer (interface MySQL) | http://localhost:8090 (serveur `mysql`, utilisateur `ticketflow`, mot de passe `ticketflow`) |
+| MySQL (depuis la machine) | `localhost:3310` (utilisateur `ticketflow` / `ticketflow`, root / `root`) |
 
-To follow a lesson, check out its tag: `git checkout step-01-customer-service`.
+Arrêter : `docker compose -f infra/docker-compose.yml down` (ajouter `-v` pour aussi supprimer les données MySQL).
 
-## Tech stack
+## Base de données
+MySQL 8 avec une base par microservice (`customer_db`, `event_db`, `booking_db`, `payment_db`, `ticket_db`), créées par `infra/mysql/init.sql`. Les tables sont générées par Hibernate (`ddl-auto: update`). Chaque service lit `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` (valeurs par défaut : `localhost`, `3310`, `ticketflow`, `ticketflow`). Les tests de `customer-service` utilisent H2 en mémoire et n'ont pas besoin de MySQL.
 
-Java 21 · Spring Boot 4 · Spring Cloud 2025.1 · Resilience4J · Apache Kafka ·
-PostgreSQL · Docker / Docker Compose · Spring AI (later)
+## Parcours API de démonstration
+1. Créer un événement : `POST http://localhost:8080/api/events`
+```json
+{"title":"Concert TicketFlow","description":"Démo","venue":"Casablanca","startsAt":"2027-05-01T19:00:00","endsAt":"2027-05-01T22:00:00","capacity":100,"price":150.00}
+```
+2. Créer une réservation : `POST /api/bookings` avec header `Idempotency-Key: demo-001` et body `{"customerId":1,"eventId":1,"quantity":2}`.
+3. Simuler le paiement : `POST /api/payments` body `{"bookingId":1,"simulateSuccess":true}`.
+4. Booking consomme `payment-events`, confirme la réservation et publie `booking-confirmed`.
+5. Ticket Service émet un billet unique par place; Notification Service écrit une notification de démonstration dans ses logs.
 
-## Repository structure
+## Endpoints
+- Customer : `/api/customers`
+- Event : `/api/events`
+- Booking : `/api/bookings`
+- Payment : `/api/payments`
+- Ticket : `/api/tickets`
+- Notification health : `/api/notifications/health`
 
-    ticketflow/
-    ├── docs/            # lessons, ADRs, templates
-    ├── infra/           # docker-compose and infrastructure config
-    ├── config-repo/     # configuration served by the config server
-    └── services/        # one folder per microservice, each with its own README
+## Limites connues avant production
+- Paiement simulé uniquement; aucun prestataire ni webhook signé.
+- Notifications en adaptateur console; pas encore de SMTP/SMS.
+- Identifiants MySQL de démonstration en clair dans `docker-compose.yml`; utiliser des secrets en production.
+- Authentification OIDC/Keycloak, autorisations par rôle, outbox transactionnelle, DLQ Kafka, observabilité et tests d'intégration restent à réaliser.
+- La réservation appelle Event Service pour bloquer la capacité; une compensation est faite en cas d'échec d'enregistrement local. Pour une garantie forte multi-service, compléter avec saga/outbox et tâches de réconciliation.
 
-Every module is independently runnable and testable, and documents itself in
-its own `README.md`.
+## Travail en équipe (3 personnes)
+- Développeuse A : Event Service et capacité / tests.
+- Développeuse B : Booking Service et intégration Feign (responsable réservation).
+- Développeuse C : Payment, Ticket, Notification et Kafka.
+- Intégration commune : une Pull Request par fonctionnalité vers `main`; ne jamais pousser directement sur `main`.
+- `ticketflow-config` est un dépôt séparé : chaque changement de configuration doit être commit/poussé dans ce dépôt aussi.
 
-## Getting started
-
-Prerequisites: JDK 21, Maven (or the included wrapper), Docker.
-
-    git clone https://github.com/<your-user>/ticketflow.git
-    cd ticketflow
-    mvn clean verify
-
-## Who is this for?
-
-Java developers who know Spring Boot basics and want to move into
-microservices, and anyone preparing for backend or architecture interviews.
-
-<!--
-## Contributing
-
-Contributions, issues and exercises are welcome. A `CONTRIBUTING.md` will be
-added soon.
--->
-
-## License
-
-To be defined (MIT recommended for an educational project).
-
-## Author
-
-**AHAIDOUS Khadija**   | [GitHub](https://github.com/kahaidous>) · [LinkedIn](https://www.linkedin.com/in/khadijaahaidous)
+Commandes recommandées : `git switch -c feature/booking-reservation`, `git add ...`, `git commit -m "feat(booking): implement reservation flow"`, `git push -u origin feature/booking-reservation`. Avant une nouvelle tâche : `git switch main && git pull --ff-only`.

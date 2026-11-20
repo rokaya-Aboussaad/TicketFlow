@@ -11,8 +11,8 @@ import java.net.URI;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,8 +25,8 @@ class CustomerControllerTest {
 
     private static String body(String email) {
         return """
-                {"firstName":"John","lastName":"Doe","email":"%s","phone":"+212600000000"}
-                """.formatted(email);
+        {"firstName":"John","lastName":"Doe","email":"%s","phone":"+212600000000"}
+        """.formatted(email);
     }
 
     private static String uniqueEmail() {
@@ -35,43 +35,40 @@ class CustomerControllerTest {
 
     @Test
     void createThenGetThenDelete() throws Exception {
-        String location = mockMvc.perform(post("/api/customers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(uniqueEmail())))
-                .andExpect(status().isCreated())
-                .andExpect(header().exists("Location"))
-                .andReturn().getResponse().getHeader("Location");
+        String location = mockMvc
+            .perform(post("/api/customers").contentType(MediaType.APPLICATION_JSON).content(body(uniqueEmail())))
+            .andExpect(status().isCreated())
+            .andExpect(header().exists("Location"))
+            .andReturn()
+            .getResponse()
+            .getHeader("Location");
 
-        mockMvc.perform(get(URI.create(location)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName").value("John"));
+        mockMvc
+            .perform(get(URI.create(location)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.firstName").value("John"));
 
-        mockMvc.perform(delete(URI.create(location)))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(delete(URI.create(location))).andExpect(status().isNoContent());
 
-        mockMvc.perform(get(URI.create(location)))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get(URI.create(location))).andExpect(status().isNotFound());
     }
 
     @Test
     void rejectsInvalidEmail() throws Exception {
-        mockMvc.perform(post("/api/customers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body("not-an-email")))
-                .andExpect(status().isBadRequest());
+        mockMvc
+            .perform(post("/api/customers").contentType(MediaType.APPLICATION_JSON).content(body("not-an-email")))
+            .andExpect(status().isBadRequest());
     }
 
     @Test
     void rejectsDuplicateEmail() throws Exception {
         String email = uniqueEmail();
-        mockMvc.perform(post("/api/customers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(email)))
-                .andExpect(status().isCreated());
+        mockMvc
+            .perform(post("/api/customers").contentType(MediaType.APPLICATION_JSON).content(body(email)))
+            .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/customers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body(email)))
-                .andExpect(status().isConflict());
+        mockMvc
+            .perform(post("/api/customers").contentType(MediaType.APPLICATION_JSON).content(body(email)))
+            .andExpect(status().isConflict());
     }
 }

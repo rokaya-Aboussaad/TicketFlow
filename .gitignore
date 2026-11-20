@@ -1,16 +1,8 @@
-# Maven
 target/
-!.mvn/wrapper/maven-wrapper.jar
-
-# IntelliJ
+**/target/
 .idea/
 *.iml
-*.iws
-out/
-
-# OS
-.DS_Store
-
-# Logs & env
-*.log
 .env
+.env.*
+!.env.example
+.DS_Store

@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class TestController {
 
-    @Value("${custom.greeting}")
+    @Value("${custom.greeting:Bienvenue dans TicketFlow}")
     private String greeting;
 
     @GetMapping("/test")
